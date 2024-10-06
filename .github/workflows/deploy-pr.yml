@@ -16,6 +16,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/github-script@v6
+        id: check-approval
+        with:
+          script: |
+            const { data: reviews } = await github.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.workflow_run.pull_requests[0].number
+            });
+
+            const approved = reviews.some(review => review.state === 'APPROVED');
+            return approved;
+
+      - name: Check if PR is approved
+        if: steps.check-approval.outputs.result != 'true'
+        run: echo "PR is not approved. Exiting..." && exit 1
+
       - uses: actions/download-artifact@v4
         with:
           name: github-pages
